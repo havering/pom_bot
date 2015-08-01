@@ -35,6 +35,8 @@ class BoodooBot
     @access_token =       SETTINGS['ACCESS_TOKEN']
     @access_token_secret =SETTINGS['ACCESS_TOKEN_SECRET']
     @tweet_interval =     SETTINGS['TWEET_INTERVAL']
+    @tweet_on_hour =      SETTINGS['TWEET_ON_HOUR']
+
     @update_follows_interval = SETTINGS['UPDATE_FOLLOWS_INTERVAL']
     @refresh_model_interval = SETTINGS['REFRESH_MODEL_INTERVAL']
 
@@ -94,7 +96,14 @@ class BoodooBot
 
     scheduler.interval @tweet_interval do
       if rand < @tweet_chance
-        tweet(model.make_statement)
+        if @tweet_on_hour
+          tweet(model.make_statement)
+        else
+          # schedule tweet to happen at a random minute this hour
+          in_this_many_min = rand(1..59).to_s + 'm'
+          scheduler.in.this_many_min do
+            tweet(model.make_statement)
+          end
       end
     end
 
