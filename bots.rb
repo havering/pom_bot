@@ -35,7 +35,7 @@ class BoodooBot
     @access_token =       SETTINGS['ACCESS_TOKEN']
     @access_token_secret =SETTINGS['ACCESS_TOKEN_SECRET']
     @tweet_interval =     SETTINGS['TWEET_INTERVAL']
-    @tweet_on_hour =      SETTINGS['TWEET_ON_HOUR']
+    @tweet_on_hour =      to_boolean(SETTINGS['TWEET_ON_HOUR'])
 
     @update_follows_interval = SETTINGS['UPDATE_FOLLOWS_INTERVAL']
     @refresh_model_interval = SETTINGS['REFRESH_MODEL_INTERVAL']
@@ -104,6 +104,7 @@ class BoodooBot
           scheduler.in.this_many_min do
             tweet(model.make_statement)
           end
+        end
       end
     end
 
@@ -233,6 +234,11 @@ class BoodooBot
     text = obscure_curses(text)
     super(ev, text, opts)
   end
+ 
+  # Helps us convert usage of "true" and "false" strings in .env files to booleans
+  def to_boolean(str)
+    str == 'true'
+  end 
 
   private
   def load_model!
@@ -243,6 +249,7 @@ class BoodooBot
     log "Loading model #{model_path}"
     @model = Ebooks::Model.load(model_path)
   end
+
 end
 
 BoodooBot.new(SETTINGS['BOT_NAME']) do |bot|
