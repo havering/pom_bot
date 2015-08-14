@@ -100,7 +100,8 @@ class BoodooBot
           tweet(model.make_statement)
         else
           # schedule tweet to happen at a random minute this hour
-          in_this_many_min = rand(1..59).to_s + 'm'
+          this_many_min = rand(1..59).to_s + 'm'
+          log "Scheduling tweet in #{in_this_many_min} min!"
           scheduler.in.this_many_min do
             tweet(model.make_statement)
           end
@@ -249,6 +250,7 @@ class BoodooBot
     log "Loading model #{model_path}"
     @model = Ebooks::Model.load(model_path)
   end
+
 end
 
 BoodooBot.new(SETTINGS['BOT_NAME']) do |bot|
