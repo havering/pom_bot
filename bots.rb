@@ -36,7 +36,6 @@ class BoodooBot
     @access_token_secret =SETTINGS['ACCESS_TOKEN_SECRET']
     @tweet_interval =     SETTINGS['TWEET_INTERVAL']
     @tweet_on_hour =      to_boolean(SETTINGS['TWEET_ON_HOUR'])
-
     @update_follows_interval = SETTINGS['UPDATE_FOLLOWS_INTERVAL']
     @refresh_model_interval = SETTINGS['REFRESH_MODEL_INTERVAL']
 
@@ -101,7 +100,7 @@ class BoodooBot
         else
           # schedule tweet to happen at a random minute this hour
           this_many_min = rand(1..59).to_s + 'm'
-          log "Scheduling tweet in #{in_this_many_min} min!"
+          log "Scheduling tweet in #{this_many_min} min!"
           scheduler.in.this_many_min do
             tweet(model.make_statement)
           end
@@ -250,7 +249,6 @@ class BoodooBot
     log "Loading model #{model_path}"
     @model = Ebooks::Model.load(model_path)
   end
-
 end
 
 BoodooBot.new(SETTINGS['BOT_NAME']) do |bot|
