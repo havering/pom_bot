@@ -1,7 +1,7 @@
 {
-  "name": "BooDooBooks",
-  "description": "Turn-key _ebooks deployment using twitter_ebooks",
-  "repository": "https://github.com/BooDoo/ebooks_example/tree/deploy",
+  "name": "PomBooks",
+  "description": "Tweaked clone of BoodooEbooks",
+  "repository": "https://github.com/havering/pom_bot/tree/master",
   "keywords": [
     "twitter",
     "bot",
