@@ -1,1 +1,1 @@
-Modification of [boodoo_ebooks](https://github.com/grampajoe/ebooks_example) for grand master Pom.
+Modification of [boodoo_ebooks](https://github.com/BooDoo/ebooks_example) for grand master Pom.
