@@ -1,4 +1,6 @@
-POM_FACTS = [
+class PomFacts
+
+  POM_FACTS = [
     'Queen Victoria owned a particularly small Pomeranian and consequently the smaller variety became universally popular.',
     'Classed as a toy dog breed bc of its small size, the Pomeranian is descended from the larger Spitz type dogs, specifically the German Spitz',
     'Pomeranians are small dogs weighing 1.9–3.5 kilograms and standing 5.0–11 inches high at the withers.',
@@ -46,8 +48,9 @@ POM_FACTS = [
     'He is sound in composition and action.'
   ]
 
-def get_facts
-  size = POM_FACTS.length - 1
-  fact_num = rand(0..size)
-  POM_FACTS[fact_num]
+  def get_facts
+    size = POM_FACTS.length - 1
+    fact_num = rand(0..size)
+    POM_FACTS[fact_num]
+  end
 end

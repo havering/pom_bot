@@ -1,6 +1,7 @@
 require 'twitter_ebooks'
 require_relative 'boodoo'
 require 'dotenv'
+require_relative 'pom_facts'
 
 include Ebooks::Boodoo
 
@@ -25,37 +26,38 @@ end
 class BoodooBot
   attr_accessor :original, :model, :model_path, :auth_name, :archive_path, :archive
   attr_accessor :followers, :following
+
   def configure
     # create attr_accessors for all SETTINGS fields
     SETTINGS.keys.map(&:to_s).map(&:downcase).each(&Ebooks::Bot.method(:attr_accessor))
 
     # String fields taken as-is:
-    @consumer_key =       SETTINGS['CONSUMER_KEY']
-    @consumer_secret =    SETTINGS['CONSUMER_SECRET']
-    @access_token =       SETTINGS['ACCESS_TOKEN']
+    @consumer_key = SETTINGS['CONSUMER_KEY']
+    @consumer_secret = SETTINGS['CONSUMER_SECRET']
+    @access_token = SETTINGS['ACCESS_TOKEN']
     @access_token_secret =SETTINGS['ACCESS_TOKEN_SECRET']
-    @tweet_interval =     SETTINGS['TWEET_INTERVAL']
-    @tweet_on_hour =      to_boolean(SETTINGS['TWEET_ON_HOUR'])
+    @tweet_interval = SETTINGS['TWEET_INTERVAL']
+    @tweet_on_hour = to_boolean(SETTINGS['TWEET_ON_HOUR'])
     @update_follows_interval = SETTINGS['UPDATE_FOLLOWS_INTERVAL']
     @refresh_model_interval = SETTINGS['REFRESH_MODEL_INTERVAL']
 
     # String fields forced to downcase:
-    @bot_name =           SETTINGS['BOT_NAME']
-    @original =           SETTINGS['SOURCE_USERNAME']
+    @bot_name = SETTINGS['BOT_NAME']
+    @original = SETTINGS['SOURCE_USERNAME']
 
     # Array fields are CSV or SSV
-    @blacklist =        parse_array(SETTINGS['BLACKLIST'])
-    @banned_terms =     parse_array(SETTINGS['BANNED_TERMS'])
-    $banned_terms =     @banned_terms
-    @special_terms  =   parse_array(SETTINGS['SPECIAL_TERMS'])
+    @blacklist = parse_array(SETTINGS['BLACKLIST'])
+    @banned_terms = parse_array(SETTINGS['BANNED_TERMS'])
+    $banned_terms = @banned_terms
+    @special_terms = parse_array(SETTINGS['SPECIAL_TERMS'])
 
     # Fields parsed as Fixnum, Float, or Range:
-    @default_delay =    parse_range(SETTINGS['DEFAULT_DELAY'])
-    @dm_delay =         parse_range(SETTINGS['DM_DELAY']) || parse_range(SETTINGS['DEFAULT_DELAY'])
-    @mention_delay =    parse_range(SETTINGS['MENTION_DELAY']) || parse_range(SETTINGS['DEFAULT_DELAY'])
-    @timeline_delay =   parse_range(SETTINGS['TIMELINE_DELAY']) || parse_range(SETTINGS['DEFAULT_DELAY'])
-    @tweet_chance =     parse_num(SETTINGS['TWEET_CHANCE'])
-    @timeout_sleep =    parse_num(SETTINGS['TIMEOUT_SLEEP'])
+    @default_delay = parse_range(SETTINGS['DEFAULT_DELAY'])
+    @dm_delay = parse_range(SETTINGS['DM_DELAY']) || parse_range(SETTINGS['DEFAULT_DELAY'])
+    @mention_delay = parse_range(SETTINGS['MENTION_DELAY']) || parse_range(SETTINGS['DEFAULT_DELAY'])
+    @timeline_delay = parse_range(SETTINGS['TIMELINE_DELAY']) || parse_range(SETTINGS['DEFAULT_DELAY'])
+    @tweet_chance = parse_num(SETTINGS['TWEET_CHANCE'])
+    @timeout_sleep = parse_num(SETTINGS['TIMEOUT_SLEEP'])
 
     # from upstream example
     @userinfo = {}
@@ -71,7 +73,7 @@ class BoodooBot
       get_archive!
       make_model!
     else
-      missing_fields.each {|missing|
+      missing_fields.each { |missing|
         log "Can't run without #{missing}"
       }
       log "Heroku will automatically try again immediately or in 10 minutes..."
@@ -79,8 +81,13 @@ class BoodooBot
     end
   end
 
-  def top100; @top100 ||= model.keywords.take(100); end
-  def top20;  @top20  ||= model.keywords.take(20); end
+  def top100;
+    @top100 ||= model.keywords.take(100);
+  end
+
+  def top20;
+    @top20 ||= model.keywords.take(20);
+  end
 
   # Overwrites Ebooks::Bot#delay, but do we gain anything doing so?
   def delay(d, &b)
@@ -92,17 +99,28 @@ class BoodooBot
   def on_startup
     log "I started up!"
     tweet(model.make_statement)
+    pom = PomFacts.new
 
     scheduler.interval @tweet_interval do
       if rand < @tweet_chance
         if @tweet_on_hour
-          tweet(model.make_statement)
+          # 50% chance of tweeting gibberish, 50% pom facts
+          if rand(1..100) % 2 == 0
+            tweet(model.make_statement)
+          else
+            tweet(pom.get_facts)
+          end
+
         else
           # schedule tweet to happen at a random minute this hour
           this_many_min = rand(1..59).to_s + 'm'
           log "Scheduling tweet in #{this_many_min} min!"
           scheduler.in.this_many_min do
-            tweet(model.make_statement)
+            if rand(1..100) % 2 == 0
+              tweet(model.make_statement)
+            else
+              tweet(pom.get_facts)
+            end
           end
         end
       end
@@ -129,21 +147,21 @@ class BoodooBot
       #TODO: Add blacklist/whitelist/reject(banned phrase)
       #TODO? Move this into a DMController class or equivalent?
       case action
-      when "tweet"
-        tweet model.make_response(payload, 140)
-      when "follow", "unfollow", "block"
-        payload = parse_array(payload.gsub("@", ''), / *[,; ]+ */) # Strip @s and make array
-        send(action.to_sym, payload)
-      when "mention"
-        pre = payload + " "
-        limit = 140 - pre.size
-        message = "#{pre}#{model.make_statement(limit)}"
-        tweet message
-      when "cheating"
-        tweet payload
-      else
-        log "Don't have behavior for action: #{action}"
-        reply(dm, model.make_response(dm.text))
+        when "tweet"
+          tweet model.make_response(payload, 140)
+        when "follow", "unfollow", "block"
+          payload = parse_array(payload.gsub("@", ''), / *[,; ]+ */) # Strip @s and make array
+          send(action.to_sym, payload)
+        when "mention"
+          pre = payload + " "
+          limit = 140 - pre.size
+          message = "#{pre}#{model.make_statement(limit)}"
+          tweet message
+        when "cheating"
+          tweet payload
+        else
+          log "Don't have behavior for action: #{action}"
+          reply(dm, model.make_response(dm.text))
       end
     else
       #otherwise, just reply like a mention
@@ -234,11 +252,11 @@ class BoodooBot
     text = obscure_curses(text)
     super(ev, text, opts)
   end
- 
+
   # Helps us convert usage of "true" and "false" strings in .env files to booleans
   def to_boolean(str)
     str == 'true'
-  end 
+  end
 
   private
   def load_model!
