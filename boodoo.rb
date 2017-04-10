@@ -33,6 +33,8 @@ module Ebooks::Boodoo
       re = Regexp.new("\\b#{term}\\b", "i")
       tweet.gsub!(re, Ebooks::Boodoo.obscure_curse(term.size))
     end
+    # look for C and remove
+    tweet = tweet.gsub(/[C]/, '')
     tweet
   end
 
